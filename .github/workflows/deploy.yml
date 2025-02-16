@@ -5,11 +5,14 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
+  deployments: write # Add this permission
 
+# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -39,6 +42,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
+      - name: Build
+        run: |
+          # Add any build commands if needed
+          echo "No build step required"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
