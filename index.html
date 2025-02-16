@@ -8,16 +8,22 @@
 </head>
 <body>
     <div class="container">
-        <div class="search-container">
-            <input 
-                type="text" 
-                id="address-input" 
-                placeholder="Enter an address..."
-                autocomplete="off"
-            >
-            <div id="suggestions-container"></div>
+        <div class="places-list">
+            <h2>Searched Places</h2>
+            <ul id="saved-places"></ul>
         </div>
-        <div id="map"></div>
+        <div class="map-container">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="address-input" 
+                    placeholder="Enter an address..."
+                    autocomplete="off"
+                >
+                <div id="suggestions-container"></div>
+            </div>
+            <div id="map"></div>
+        </div>
     </div>
 
     <script src="js/map.js"></script>

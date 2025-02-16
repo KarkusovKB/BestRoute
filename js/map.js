@@ -12,6 +12,7 @@ window.addEventListener('error', function(e) {
 let map;
 let marker;
 let autocomplete;
+let savedPlaces = [];
 
 async function initMap() {
     try {
@@ -63,7 +64,13 @@ async function initMap() {
             }
 
             addMarker(place.geometry.location);
+            
+            // Add place to the list
+            addToPlacesList(place);
         });
+
+        // Add this to the end of initMap function
+        loadPlacesFromLocalStorage();
     } catch (error) {
         console.error('Error initializing map:', error);
         document.getElementById('map').innerHTML = 'Error loading map. Please check the console for details.';
@@ -120,4 +127,67 @@ window.addEventListener('error', function(e) {
             '2. Refresh the page<br>' +
             'If the problem persists, check browser console for details.</div>';
     }
-}, true); 
+}, true);
+
+function addToPlacesList(place) {
+    // Check if place already exists
+    if (!savedPlaces.some(p => p.place_id === place.place_id)) {
+        savedPlaces.push({
+            place_id: place.place_id,
+            name: place.name,
+            address: place.formatted_address,
+            location: place.geometry.location
+        });
+        updatePlacesList();
+        savePlacesToLocalStorage();
+    }
+}
+
+function updatePlacesList() {
+    const placesList = document.getElementById('saved-places');
+    placesList.innerHTML = '';
+
+    savedPlaces.forEach((place, index) => {
+        const li = document.createElement('li');
+        li.className = 'place-item';
+        li.innerHTML = `
+            <div class="place-name">${place.name}</div>
+            <div class="place-address">${place.address}</div>
+            <span class="remove-place" data-index="${index}">×</span>
+        `;
+
+        // Add click handler to center map on this place
+        li.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('remove-place')) {
+                map.setCenter(place.location);
+                map.setZoom(17);
+                addMarker(place.location);
+            }
+        });
+
+        placesList.appendChild(li);
+    });
+
+    // Add remove button handlers
+    document.querySelectorAll('.remove-place').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(e.target.dataset.index);
+            savedPlaces.splice(index, 1);
+            updatePlacesList();
+            savePlacesToLocalStorage();
+        });
+    });
+}
+
+function savePlacesToLocalStorage() {
+    localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
+}
+
+function loadPlacesFromLocalStorage() {
+    const saved = localStorage.getItem('savedPlaces');
+    if (saved) {
+        savedPlaces = JSON.parse(saved);
+        updatePlacesList();
+    }
+} 
