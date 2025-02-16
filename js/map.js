@@ -78,7 +78,29 @@ async function initMap() {
             fullscreenControl: true
         });
 
-        // Get user's current location
+        // Initialize directions services
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: true,
+            polylineOptions: {
+                strokeColor: '#007AFF',
+                strokeWeight: 4
+            }
+        });
+
+        // Initialize autocomplete
+        const input = document.getElementById('address-input');
+        autocomplete = new google.maps.places.Autocomplete(input);
+        autocomplete.bindTo('bounds', map);
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        // Try to load saved places
+        loadPlacesFromLocalStorage();
+
+        // Get user location last
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -87,60 +109,20 @@ async function initMap() {
                         lng: position.coords.longitude,
                     };
                     map.setCenter(pos);
-                    addMarker(pos);
                 },
                 () => {
-                    handleLocationError(true);
+                    console.warn('Geolocation failed');
+                    // Continue without geolocation
                 }
             );
         }
-
-        // Initialize Google Places Autocomplete
-        const input = document.getElementById('address-input');
-        autocomplete = new google.maps.places.Autocomplete(input);
-        
-        // Bind the map's bounds to the autocomplete object
-        autocomplete.bindTo('bounds', map);
-
-        // Listen for place selection
-        autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-
-            if (!place.geometry) {
-                window.alert("No details available for input: '" + place.name + "'");
-                return;
-            }
-
-            // If the place has a geometry, then present it on a map
-            if (place.geometry.viewport) {
-                map.fitBounds(place.geometry.viewport);
-            } else {
-                map.setCenter(place.geometry.location);
-                map.setZoom(17);
-            }
-
-            addMarker(place.geometry.location);
-            
-            // Add place to the list
-            addToPlacesList(place);
-        });
-
-        // Add this to the end of initMap function
-        loadPlacesFromLocalStorage();
-
-        // Add to initMap function after map initialization
-        directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({
-            map: map,
-            suppressMarkers: true, // We'll use our own markers
-            polylineOptions: {
-                strokeColor: '#007AFF',
-                strokeWeight: 4
-            }
-        });
     } catch (error) {
         console.error('Error initializing map:', error);
-        document.getElementById('map').innerHTML = 'Error loading map. Please check the console for details.';
+        document.getElementById('map').innerHTML = 
+            '<div style="padding: 20px; color: red;">' +
+            'Error loading map. Please refresh the page. ' +
+            'If the problem persists, check if you have enabled location services ' +
+            'and try disabling any content blockers.</div>';
     }
 }
 
@@ -225,106 +207,74 @@ function addToPlacesList(place) {
     }
 }
 
-function addMarkerToMap(place) {
-    if (markers.has(place.place_id)) {
-        markers.get(place.place_id).setMap(null);
-    }
-
-    const marker = new google.maps.Marker({
-        position: place.location,
-        map: map,
-        animation: google.maps.Animation.DROP,
-        title: place.name
-    });
-
-    // Add click listener to marker
-    marker.addListener('click', () => {
-        map.setCenter(place.location);
-        map.setZoom(17);
-        
-        // Add info window
-        const infoWindow = new google.maps.InfoWindow({
-            content: `
-                <div style="padding: 8px;">
-                    <h3 style="margin-bottom: 4px;">${place.name}</h3>
-                    <p style="color: #666;">${place.address}</p>
-                </div>
-            `
-        });
-        infoWindow.open(map, marker);
-    });
-
-    markers.set(place.place_id, marker);
+// Add this function to create numbered markers
+function createNumberedMarker(number, color = '#007AFF') {
+    return {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: '#FFFFFF',
+        scale: 14,
+        labelOrigin: new google.maps.Point(0, 0),
+    };
 }
 
-function updatePlacesList() {
-    const placesList = document.getElementById('saved-places');
-    placesList.innerHTML = '';
+// Update the updateRouteVisualization function
+function updateRouteVisualization(result) {
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    markers.clear();
 
+    // Create new markers with numbers
     savedPlaces.forEach((place, index) => {
-        const li = document.createElement('li');
-        li.className = 'place-item';
-        li.innerHTML = `
-            <div class="place-number">${index + 1}</div>
-            <div class="place-name">${place.name}</div>
-            <div class="place-address">${place.address}</div>
-            <span class="remove-place" data-index="${index}">×</span>
-        `;
-
-        li.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('remove-place')) {
-                map.setCenter(place.location);
-                map.setZoom(17);
-                
-                // Animate marker
-                const marker = markers.get(place.place_id);
-                if (marker) {
-                    marker.setAnimation(google.maps.Animation.BOUNCE);
-                    setTimeout(() => marker.setAnimation(null), 750);
-                }
-            }
+        const marker = new google.maps.Marker({
+            position: place.location,
+            map: map,
+            icon: createNumberedMarker('#007AFF'),
+            label: {
+                text: (index + 1).toString(),
+                color: '#FFFFFF',
+                fontSize: '12px',
+                fontWeight: 'bold'
+            },
+            zIndex: 100 + index
         });
 
-        placesList.appendChild(li);
-    });
+        markers.set(place.place_id, marker);
 
-    document.querySelectorAll('.remove-place').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = parseInt(e.target.dataset.index);
-            const place = savedPlaces[index];
+        // Add click listener
+        marker.addListener('click', () => {
+            map.setCenter(place.location);
+            map.setZoom(17);
             
-            // Remove marker from map
-            if (markers.has(place.place_id)) {
-                markers.get(place.place_id).setMap(null);
-                markers.delete(place.place_id);
-            }
-            
-            savedPlaces.splice(index, 1);
-            updatePlacesList();
-            savePlacesToLocalStorage();
-            
-            // Clear the route when a place is removed
-            clearRoute();
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 8px;">
+                        <h3 style="margin-bottom: 4px;">${place.name}</h3>
+                        <p style="color: #666;">Stop #${index + 1}</p>
+                    </div>
+                `
+            });
+            infoWindow.open(map, marker);
         });
     });
+
+    // Update the route line style
+    const routeOptions = {
+        polylineOptions: {
+            strokeColor: '#007AFF',
+            strokeWeight: 4,
+            strokeOpacity: 0.8
+        },
+        suppressMarkers: true // Hide default markers since we're using custom ones
+    };
+
+    directionsRenderer.setOptions(routeOptions);
+    directionsRenderer.setDirections(result);
 }
 
-function savePlacesToLocalStorage() {
-    localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
-}
-
-function loadPlacesFromLocalStorage() {
-    const saved = localStorage.getItem('savedPlaces');
-    if (saved) {
-        savedPlaces = JSON.parse(saved);
-        savedPlaces.forEach(place => {
-            addMarkerToMap(place);
-        });
-        updatePlacesList();
-    }
-}
-
+// Update the optimizeRoute function
 async function optimizeRoute() {
     if (savedPlaces.length < 2) {
         alert('Add at least 2 places to optimize the route');
@@ -354,13 +304,11 @@ async function optimizeRoute() {
         });
         optimizedPlaces.push(savedPlaces[savedPlaces.length - 1]);
 
-        // Animate the reordering
-        await animateReordering(optimizedPlaces);
-
-        // Update the saved places array
+        // Update the saved places array with the optimized order
         savedPlaces = optimizedPlaces;
         
         // Update UI with animation
+        await animateReordering(optimizedPlaces);
         updatePlacesList();
         savePlacesToLocalStorage();
         
@@ -371,6 +319,11 @@ async function optimizeRoute() {
 
         // Update markers and lines
         updateRouteVisualization(result);
+
+        // Fit bounds to show all markers
+        const bounds = new google.maps.LatLngBounds();
+        savedPlaces.forEach(place => bounds.extend(place.location));
+        map.fitBounds(bounds);
     } catch (error) {
         console.error('Route optimization failed:', error);
         alert('Could not optimize route. Please try again.');
@@ -468,31 +421,6 @@ function clearRoute() {
     }
 }
 
-function updateRouteVisualization(result) {
-    // Customize the route line style
-    const routeOptions = {
-        polylineOptions: {
-            strokeColor: '#007AFF',
-            strokeWeight: 4,
-            strokeOpacity: 0.8
-        },
-        suppressMarkers: false,
-        markerOptions: {
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 7,
-                fillColor: '#007AFF',
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: '#FFFFFF'
-            }
-        }
-    };
-
-    directionsRenderer.setOptions(routeOptions);
-    directionsRenderer.setDirections(result);
-}
-
 async function animateReordering(newOrder) {
     const placesList = document.getElementById('saved-places');
     const items = placesList.querySelectorAll('.place-item');
@@ -529,4 +457,143 @@ async function animateReordering(newOrder) {
 
     // Wait for animation to complete
     await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+// Separate event listener setup
+function setupEventListeners() {
+    autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+
+        if (!place.geometry) {
+            window.alert("No details available for input: '" + place.name + "'");
+            return;
+        }
+
+        if (place.geometry.viewport) {
+            map.fitBounds(place.geometry.viewport);
+        } else {
+            map.setCenter(place.geometry.location);
+            map.setZoom(17);
+        }
+
+        addToPlacesList(place);
+    });
+}
+
+// Update addMarkerToMap to use numbered markers
+function addMarkerToMap(place) {
+    if (markers.has(place.place_id)) {
+        markers.get(place.place_id).setMap(null);
+    }
+
+    const index = savedPlaces.findIndex(p => p.place_id === place.place_id);
+    const marker = new google.maps.Marker({
+        position: place.location,
+        map: map,
+        icon: createNumberedMarker('#007AFF'),
+        label: {
+            text: (index + 1).toString(),
+            color: '#FFFFFF',
+            fontSize: '12px',
+            fontWeight: 'bold'
+        },
+        animation: google.maps.Animation.DROP,
+        zIndex: 100 + index
+    });
+
+    marker.addListener('click', () => {
+        map.setCenter(place.location);
+        map.setZoom(17);
+        
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 8px;">
+                    <h3 style="margin-bottom: 4px;">${place.name}</h3>
+                    <p style="color: #666;">Stop #${index + 1}</p>
+                </div>
+            `
+        });
+        infoWindow.open(map, marker);
+    });
+
+    markers.set(place.place_id, marker);
+}
+
+function updatePlacesList() {
+    const placesList = document.getElementById('saved-places');
+    placesList.innerHTML = '';
+
+    savedPlaces.forEach((place, index) => {
+        const li = document.createElement('li');
+        li.className = 'place-item';
+        li.innerHTML = `
+            <div class="place-number">${index + 1}</div>
+            <div class="place-name">${place.name}</div>
+            <div class="place-address">${place.address}</div>
+            <span class="remove-place" data-index="${index}">×</span>
+        `;
+
+        li.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('remove-place')) {
+                map.setCenter(place.location);
+                map.setZoom(17);
+                
+                // Animate marker
+                const marker = markers.get(place.place_id);
+                if (marker) {
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(() => marker.setAnimation(null), 750);
+                }
+            }
+        });
+
+        placesList.appendChild(li);
+    });
+
+    document.querySelectorAll('.remove-place').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(e.target.dataset.index);
+            const place = savedPlaces[index];
+            
+            // Remove marker from map
+            if (markers.has(place.place_id)) {
+                markers.get(place.place_id).setMap(null);
+                markers.delete(place.place_id);
+            }
+            
+            savedPlaces.splice(index, 1);
+            updatePlacesList();
+            savePlacesToLocalStorage();
+            
+            // Clear the route when a place is removed
+            clearRoute();
+        });
+    });
+}
+
+function savePlacesToLocalStorage() {
+    try {
+        localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
+    } catch (error) {
+        console.warn('Could not save to localStorage:', error);
+        // Continue without saving to localStorage
+    }
+}
+
+function loadPlacesFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('savedPlaces');
+        if (saved) {
+            savedPlaces = JSON.parse(saved);
+            savedPlaces.forEach(place => {
+                addMarkerToMap(place);
+            });
+            updatePlacesList();
+        }
+    } catch (error) {
+        console.warn('Could not load from localStorage:', error);
+        // Continue with empty places list
+        savedPlaces = [];
+    }
 } 
