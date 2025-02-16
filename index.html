@@ -9,7 +9,16 @@
 <body>
     <div class="container">
         <div class="places-list">
-            <h2>Searched Places</h2>
+            <h2>Saved Places</h2>
+            <div class="route-controls">
+                <select id="travel-mode" class="travel-mode-select">
+                    <option value="DRIVING">🚗 By Car</option>
+                    <option value="WALKING">🚶 Walking</option>
+                </select>
+                <button id="optimize-route" class="optimize-button">
+                    Optimize Route
+                </button>
+            </div>
             <ul id="saved-places"></ul>
         </div>
         <div class="map-container">

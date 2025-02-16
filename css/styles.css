@@ -138,6 +138,68 @@
     height: 100vh;
 }
 
+.route-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+}
+
+.travel-mode-select {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    color: #1d1d1f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.travel-mode-select:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.optimize-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: #007AFF;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.optimize-button:hover {
+    background: #0066CC;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.optimize-button:active {
+    transform: translateY(0);
+}
+
+.route-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1d1d1f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.route-info .total-time,
+.route-info .total-distance {
+    display: block;
+    margin-top: 4px;
+    color: #86868b;
+}
+
 @media (max-width: 768px) {
     .container {
         flex-direction: column;

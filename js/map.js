@@ -14,6 +14,9 @@ let marker;
 let autocomplete;
 let savedPlaces = [];
 let markers = new Map(); // To store all markers
+let directionsService;
+let directionsRenderer;
+let currentRoute = null;
 
 async function initMap() {
     try {
@@ -123,6 +126,17 @@ async function initMap() {
 
         // Add this to the end of initMap function
         loadPlacesFromLocalStorage();
+
+        // Add to initMap function after map initialization
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: true, // We'll use our own markers
+            polylineOptions: {
+                strokeColor: '#007AFF',
+                strokeWeight: 4
+            }
+        });
     } catch (error) {
         console.error('Error initializing map:', error);
         document.getElementById('map').innerHTML = 'Error loading map. Please check the console for details.';
@@ -282,6 +296,9 @@ function updatePlacesList() {
             savedPlaces.splice(index, 1);
             updatePlacesList();
             savePlacesToLocalStorage();
+            
+            // Clear the route when a place is removed
+            clearRoute();
         });
     });
 }
@@ -298,5 +315,129 @@ function loadPlacesFromLocalStorage() {
             addMarkerToMap(place);
         });
         updatePlacesList();
+    }
+}
+
+async function optimizeRoute() {
+    if (savedPlaces.length < 2) {
+        alert('Add at least 2 places to optimize the route');
+        return;
+    }
+
+    const travelMode = document.getElementById('travel-mode').value;
+    const waypoints = savedPlaces.slice(1, -1).map(place => ({
+        location: place.location,
+        stopover: true
+    }));
+
+    try {
+        const result = await calculateRoute(
+            savedPlaces[0].location,
+            savedPlaces[savedPlaces.length - 1].location,
+            waypoints,
+            travelMode
+        );
+
+        // Get the optimized waypoint order
+        const order = result.routes[0].waypoint_order;
+        
+        // Reorder saved places based on optimization
+        const optimizedPlaces = [savedPlaces[0]];
+        order.forEach(index => {
+            optimizedPlaces.push(savedPlaces[index + 1]);
+        });
+        optimizedPlaces.push(savedPlaces[savedPlaces.length - 1]);
+
+        // Update the saved places array
+        savedPlaces = optimizedPlaces;
+        
+        // Update UI
+        updatePlacesList();
+        savePlacesToLocalStorage();
+        
+        // Show route info
+        displayRouteInfo(result.routes[0].legs);
+        
+        currentRoute = result;
+    } catch (error) {
+        console.error('Route optimization failed:', error);
+        alert('Could not optimize route. Please try again.');
+    }
+}
+
+function calculateRoute(origin, destination, waypoints, travelMode) {
+    return new Promise((resolve, reject) => {
+        directionsService.route({
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            optimizeWaypoints: true,
+            travelMode: google.maps.TravelMode[travelMode]
+        }, (result, status) => {
+            if (status === 'OK') {
+                directionsRenderer.setDirections(result);
+                resolve(result);
+            } else {
+                reject(status);
+            }
+        });
+    });
+}
+
+function displayRouteInfo(legs) {
+    let totalDistance = 0;
+    let totalDuration = 0;
+
+    legs.forEach(leg => {
+        totalDistance += leg.distance.value;
+        totalDuration += leg.duration.value;
+    });
+
+    const routeInfo = document.createElement('div');
+    routeInfo.className = 'route-info';
+    routeInfo.innerHTML = `
+        <strong>Optimized Route Info:</strong>
+        <span class="total-time">Total Time: ${formatDuration(totalDuration)}</span>
+        <span class="total-distance">Total Distance: ${formatDistance(totalDistance)}</span>
+    `;
+
+    const existingInfo = document.querySelector('.route-info');
+    if (existingInfo) {
+        existingInfo.remove();
+    }
+    document.querySelector('.route-controls').appendChild(routeInfo);
+}
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours ? hours + 'h ' : ''}${minutes}min`;
+}
+
+function formatDistance(meters) {
+    const km = meters / 1000;
+    return `${km.toFixed(1)} km`;
+}
+
+// Add event listeners after DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('optimize-route').addEventListener('click', optimizeRoute);
+    
+    document.getElementById('travel-mode').addEventListener('change', () => {
+        if (currentRoute) {
+            optimizeRoute(); // Recalculate route when travel mode changes
+        }
+    });
+});
+
+// Update clearRoute function
+function clearRoute() {
+    if (directionsRenderer) {
+        directionsRenderer.setDirections({ routes: [] });
+    }
+    currentRoute = null;
+    const routeInfo = document.querySelector('.route-info');
+    if (routeInfo) {
+        routeInfo.remove();
     }
 } 
