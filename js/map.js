@@ -217,6 +217,11 @@ function addToPlacesList(place) {
         addMarkerToMap(placeData);
         updatePlacesList();
         savePlacesToLocalStorage();
+
+        // Automatically optimize route when adding a new place
+        if (savedPlaces.length >= 2) {
+            optimizeRoute();
+        }
     }
 }
 
@@ -426,7 +431,7 @@ function formatDistance(meters) {
     return `${km.toFixed(1)} km`;
 }
 
-// Add event listeners after DOM is loaded
+// Update the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
     const drivingButton = document.getElementById('mode-driving');
     const walkingButton = document.getElementById('mode-walking');
@@ -438,8 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
     walkingButton.addEventListener('click', () => {
         setTravelMode('WALKING', walkingButton, drivingButton);
     });
-    
-    document.getElementById('optimize-route').addEventListener('click', optimizeRoute);
 });
 
 function setTravelMode(mode, activeButton, inactiveButton) {
@@ -447,8 +450,9 @@ function setTravelMode(mode, activeButton, inactiveButton) {
     activeButton.classList.add('active');
     inactiveButton.classList.remove('active');
     
-    if (currentRoute) {
-        optimizeRoute(); // Recalculate route when travel mode changes
+    // Automatically optimize route when mode changes
+    if (savedPlaces.length >= 2) {
+        optimizeRoute();
     }
 }
 
