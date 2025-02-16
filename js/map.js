@@ -13,13 +13,65 @@ let map;
 let marker;
 let autocomplete;
 let savedPlaces = [];
+let markers = new Map(); // To store all markers
 
 async function initMap() {
     try {
         // Initialize the map
+        const mapStyle = [
+            {
+                "featureType": "water",
+                "elementType": "geometry",
+                "stylers": [{"color": "#e9e9e9"}, {"lightness": 17}]
+            },
+            {
+                "featureType": "landscape",
+                "elementType": "geometry",
+                "stylers": [{"color": "#f5f5f5"}, {"lightness": 20}]
+            },
+            {
+                "featureType": "road.highway",
+                "elementType": "geometry.fill",
+                "stylers": [{"color": "#ffffff"}, {"lightness": 17}]
+            },
+            {
+                "featureType": "road.highway",
+                "elementType": "geometry.stroke",
+                "stylers": [{"color": "#ffffff"}, {"lightness": 29}, {"weight": 0.2}]
+            },
+            {
+                "featureType": "road.arterial",
+                "elementType": "geometry",
+                "stylers": [{"color": "#ffffff"}, {"lightness": 18}]
+            },
+            {
+                "featureType": "road.local",
+                "elementType": "geometry",
+                "stylers": [{"color": "#ffffff"}, {"lightness": 16}]
+            },
+            {
+                "featureType": "poi",
+                "elementType": "geometry",
+                "stylers": [{"color": "#f5f5f5"}, {"lightness": 21}]
+            },
+            {
+                "featureType": "poi.park",
+                "elementType": "geometry",
+                "stylers": [{"color": "#dedede"}, {"lightness": 21}]
+            }
+        ];
+
         map = new google.maps.Map(document.getElementById('map'), {
             zoom: 12,
-            center: { lat: 0, lng: 0 }
+            center: { lat: 0, lng: 0 },
+            styles: mapStyle,
+            disableDefaultUI: true, // Removes default UI elements
+            zoomControl: true, // Add back zoom control
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: true
         });
 
         // Get user's current location
@@ -135,17 +187,54 @@ window.addEventListener('error', function(e) {
 }, true);
 
 function addToPlacesList(place) {
-    // Check if place already exists
     if (!savedPlaces.some(p => p.place_id === place.place_id)) {
-        savedPlaces.push({
+        const placeData = {
             place_id: place.place_id,
             name: place.name,
             address: place.formatted_address,
-            location: place.geometry.location
-        });
+            location: {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+            }
+        };
+        
+        savedPlaces.push(placeData);
+        addMarkerToMap(placeData);
         updatePlacesList();
         savePlacesToLocalStorage();
     }
+}
+
+function addMarkerToMap(place) {
+    if (markers.has(place.place_id)) {
+        markers.get(place.place_id).setMap(null);
+    }
+
+    const marker = new google.maps.Marker({
+        position: place.location,
+        map: map,
+        animation: google.maps.Animation.DROP,
+        title: place.name
+    });
+
+    // Add click listener to marker
+    marker.addListener('click', () => {
+        map.setCenter(place.location);
+        map.setZoom(17);
+        
+        // Add info window
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 8px;">
+                    <h3 style="margin-bottom: 4px;">${place.name}</h3>
+                    <p style="color: #666;">${place.address}</p>
+                </div>
+            `
+        });
+        infoWindow.open(map, marker);
+    });
+
+    markers.set(place.place_id, marker);
 }
 
 function updatePlacesList() {
@@ -161,23 +250,35 @@ function updatePlacesList() {
             <span class="remove-place" data-index="${index}">×</span>
         `;
 
-        // Add click handler to center map on this place
         li.addEventListener('click', (e) => {
             if (!e.target.classList.contains('remove-place')) {
                 map.setCenter(place.location);
                 map.setZoom(17);
-                addMarker(place.location);
+                
+                // Animate marker
+                const marker = markers.get(place.place_id);
+                if (marker) {
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(() => marker.setAnimation(null), 750);
+                }
             }
         });
 
         placesList.appendChild(li);
     });
 
-    // Add remove button handlers
     document.querySelectorAll('.remove-place').forEach(button => {
         button.addEventListener('click', (e) => {
             e.stopPropagation();
             const index = parseInt(e.target.dataset.index);
+            const place = savedPlaces[index];
+            
+            // Remove marker from map
+            if (markers.has(place.place_id)) {
+                markers.get(place.place_id).setMap(null);
+                markers.delete(place.place_id);
+            }
+            
             savedPlaces.splice(index, 1);
             updatePlacesList();
             savePlacesToLocalStorage();
@@ -193,6 +294,9 @@ function loadPlacesFromLocalStorage() {
     const saved = localStorage.getItem('savedPlaces');
     if (saved) {
         savedPlaces = JSON.parse(saved);
+        savedPlaces.forEach(place => {
+            addMarkerToMap(place);
+        });
         updatePlacesList();
     }
 } 
