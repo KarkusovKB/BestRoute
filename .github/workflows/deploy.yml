@@ -1,38 +1,46 @@
-name: Deploy Website
+name: Deploy static content to Pages
 
 on:
+  # Runs on pushes targeting the default branch
   push:
-    branches:
-      - main
+    branches: ["main"]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
       
       - name: Replace API Key
-        shell: bash
-        env:
-          MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          # Debug: Print first few characters of the key (safely)
-          echo "First few chars of API key: ${MAPS_API_KEY:0:5}..."
-          
-          # Use perl for more reliable replacement
-          perl -pi -e "s|GOOGLE_MAPS_API_KEY_PLACEHOLDER|$ENV{MAPS_API_KEY}|g" index.html
-          
-          # Debug: Verify replacement (safely)
-          echo "Checking replacement..."
-          grep -o "key=[^&]*" index.html | cut -c1-8
+          sed -i 's/%GOOGLE_MAPS_API_KEY%/${{ secrets.GOOGLE_MAPS_API_KEY }}/g' index.html
       
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: .
-          clean: true # Automatically remove deleted files from the deployment 
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
