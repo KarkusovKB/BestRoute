@@ -204,6 +204,9 @@ function addToPlacesList(place) {
         if (savedPlaces.length >= 2) {
             optimizeRoute();
         }
+
+        // Clear the search input field
+        document.getElementById('address-input').value = '';
     }
 }
 
@@ -296,7 +299,7 @@ async function optimizeRoute() {
 
         // Get the optimized waypoint order
         const order = result.routes[0].waypoint_order;
-        
+
         // Reorder saved places based on optimization
         const optimizedPlaces = [savedPlaces[0]];
         order.forEach(index => {
@@ -306,15 +309,15 @@ async function optimizeRoute() {
 
         // Update the saved places array with the optimized order
         savedPlaces = optimizedPlaces;
-        
+
         // Update UI with animation
         await animateReordering(optimizedPlaces);
         updatePlacesList();
         savePlacesToLocalStorage();
-        
+
         // Show route info
         displayRouteInfo(result.routes[0].legs);
-        
+
         currentRoute = result;
 
         // Update markers and lines

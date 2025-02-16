@@ -129,23 +129,24 @@
 .place-item {
     padding: 16px 16px 16px 32px;
     margin-bottom: 24px;
-    background: #f0f7ff;
+    background: #007AFF;
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 122, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(0, 122, 255, 0.5);
     position: relative;
     overflow: hidden;
     min-height: 60px;
     display: flex;
     align-items: center;
+    color: white;
 }
 
 .place-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    background: #e8f2ff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    background: #0056b3;
 }
 
 .place-item:before {
