@@ -16,12 +16,13 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Replace API Key
-        env:
-          API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          # Escape special characters in API key
-          ESCAPED_KEY=$(echo "$API_KEY" | sed 's/[\/&]/\\&/g')
-          sed -i "s/%GOOGLE_MAPS_API_KEY%/$ESCAPED_KEY/g" index.html
+          # Create a temporary file with proper escaping
+          echo "${{ secrets.GOOGLE_MAPS_API_KEY }}" > api_key.txt
+          # Use the file content to replace the placeholder
+          KEY=$(cat api_key.txt)
+          sed -i "s|%GOOGLE_MAPS_API_KEY%|$KEY|g" index.html
+          rm api_key.txt
       
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
