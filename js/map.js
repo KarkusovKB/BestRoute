@@ -78,8 +78,25 @@ function handleLocationError(browserHasGeolocation) {
     );
 }
 
-// Add this to check if the API is loaded
+// Update the gm_authFailure function
 window.gm_authFailure = function() {
-    console.error('Google Maps authentication failed! Please check your API key.');
-    document.getElementById('map').innerHTML = 'Error: Google Maps failed to load. Please check your API key.';
-}; 
+    const errorMessage = 'Google Maps authentication failed! API Key: ' + 
+        document.querySelector('script[src*="maps.googleapis.com"]')
+            .src.split('key=')[1].split('&')[0].slice(0, 5) + '...';
+    console.error(errorMessage);
+    document.getElementById('map').innerHTML = 
+        '<div style="padding: 20px; color: red;">' +
+        'Error: Google Maps failed to load. ' +
+        'Please check browser console for details.</div>';
+};
+
+// Add this at the start of your file
+window.addEventListener('error', function(e) {
+    if (e.message.includes('google is not defined')) {
+        console.error('Google Maps failed to load:', e);
+        document.getElementById('map').innerHTML = 
+            '<div style="padding: 20px; color: red;">' +
+            'Error: Google Maps script failed to load. ' +
+            'Please check browser console for details.</div>';
+    }
+}, true); 
