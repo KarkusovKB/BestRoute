@@ -98,21 +98,26 @@ function handleLocationError(browserHasGeolocation) {
 
 // Update the gm_authFailure function
 window.gm_authFailure = function() {
-    const scriptElement = document.querySelector('script[src*="maps.googleapis.com"]');
-    const apiKeyInfo = scriptElement ? 
-        'API Key in use: ' + scriptElement.src.split('key=')[1].split('&')[0].slice(0, 5) + '...' :
-        'No Google Maps script found';
-    
-    console.error('Google Maps Authentication Failed:', {
-        apiKeyInfo: apiKeyInfo,
-        pageUrl: window.location.href,
-        referrer: document.referrer
+    const scriptTags = document.querySelectorAll('script[src*="maps.googleapis.com"]');
+    const apiKeyInfo = Array.from(scriptTags).map(script => {
+        const key = script.src.split('key=')[1]?.split('&')[0];
+        return key ? `${key.substr(0, 4)}...` : 'No key found';
     });
-    
+
+    console.error('Google Maps Authentication Failed:', {
+        apiKeys: apiKeyInfo,
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+    });
+
     document.getElementById('map').innerHTML = 
         '<div style="padding: 20px; color: red;">' +
-        'Error: Google Maps failed to load. ' +
-        'Please check browser console for details.</div>';
+        'Error: Google Maps authentication failed.<br><br>' +
+        'Please check:<br>' +
+        '1. API key is properly set<br>' +
+        '2. Domain is authorized<br>' +
+        '3. APIs are enabled<br>' +
+        '</div>';
 };
 
 // Add this at the start of your file

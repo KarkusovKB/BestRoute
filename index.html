@@ -28,13 +28,33 @@
 
     <script src="js/map.js"></script>
     <script>
+        // Add detailed error reporting
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Error details:', {
+                message: msg,
+                url: url,
+                line: line,
+                column: col,
+                error: error,
+                stack: error ? error.stack : 'No stack trace'
+            });
+            return false;
+        };
+
         // Add error handling for script loading
         function handleScriptError() {
-            console.error('Google Maps script failed to load');
+            const errorDetails = {
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent
+            };
+            console.error('Google Maps script failed to load:', errorDetails);
             document.getElementById('map').innerHTML = 
                 '<div style="padding: 20px; color: red;">' +
-                'Error: Google Maps script failed to load. ' +
-                'Please check browser console for details.</div>';
+                'Error: Google Maps script failed to load. <br><br>' +
+                'Error Details:<br>' +
+                JSON.stringify(errorDetails, null, 2) +
+                '</div>';
         }
     </script>
     <script async

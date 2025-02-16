@@ -27,17 +27,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
+      - name: Debug API Key
+        env:
+          MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          echo "API Key length: ${#MAPS_API_KEY}"
+          echo "First 4 chars: ${MAPS_API_KEY:0:4}..."
+      
       - name: Replace API Key
         env:
           MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          # Escape special characters in the API key
-          ESCAPED_KEY=$(echo "$MAPS_API_KEY" | sed 's/[\/&]/\\&/g')
-          # Replace the placeholder with the escaped API key
-          sed -i "s/GOOGLE_MAPS_API_KEY_PLACEHOLDER/$ESCAPED_KEY/g" index.html
-          # Verify the replacement (only show first few chars)
-          echo "Verifying API key replacement..."
-          grep -o "key=[^&]*" index.html | sed 's/\(.\{8\}\).*/\1.../'
+          # Create a temporary file with the key
+          echo "$MAPS_API_KEY" > key.txt
+          # Use the file content to replace the placeholder
+          sed -i "s|GOOGLE_MAPS_API_KEY_PLACEHOLDER|$(cat key.txt)|g" index.html
+          rm key.txt
+          # Verify replacement
+          echo "Checking key in index.html:"
+          grep -o "key=[^&]*" index.html | cut -c1-8
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
