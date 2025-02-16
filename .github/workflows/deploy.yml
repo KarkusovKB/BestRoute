@@ -20,7 +20,15 @@ jobs:
         env:
           MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          sed -i "s/GOOGLE_MAPS_API_KEY_PLACEHOLDER/$MAPS_API_KEY/g" index.html
+          # Debug: Print first few characters of the key (safely)
+          echo "First few chars of API key: ${MAPS_API_KEY:0:5}..."
+          
+          # Use perl for more reliable replacement
+          perl -pi -e "s|GOOGLE_MAPS_API_KEY_PLACEHOLDER|$ENV{MAPS_API_KEY}|g" index.html
+          
+          # Debug: Verify replacement (safely)
+          echo "Checking replacement..."
+          grep -o "key=[^&]*" index.html | cut -c1-8
       
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
