@@ -1,15 +1,19 @@
-name: Deploy to GitHub Pages
+name: Deploy Website
 
 on:
   push:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
       
       - name: Replace API Key
         env:
@@ -18,8 +22,8 @@ jobs:
           sed -i "s|GOOGLE_MAPS_API_KEY_PLACEHOLDER|${API_KEY}|g" index.html
       
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@4.1.4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: main
+          branch: gh-pages
           folder: .
           clean: true # Automatically remove deleted files from the deployment 
