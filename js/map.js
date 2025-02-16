@@ -17,6 +17,7 @@ let markers = new Map(); // To store all markers
 let directionsService;
 let directionsRenderer;
 let currentRoute = null;
+let currentTravelMode = 'DRIVING';
 
 async function initMap() {
     try {
@@ -259,6 +260,7 @@ function updatePlacesList() {
         const li = document.createElement('li');
         li.className = 'place-item';
         li.innerHTML = `
+            <div class="place-number">${index + 1}</div>
             <div class="place-name">${place.name}</div>
             <div class="place-address">${place.address}</div>
             <span class="remove-place" data-index="${index}">×</span>
@@ -324,7 +326,6 @@ async function optimizeRoute() {
         return;
     }
 
-    const travelMode = document.getElementById('travel-mode').value;
     const waypoints = savedPlaces.slice(1, -1).map(place => ({
         location: place.location,
         stopover: true
@@ -335,7 +336,7 @@ async function optimizeRoute() {
             savedPlaces[0].location,
             savedPlaces[savedPlaces.length - 1].location,
             waypoints,
-            travelMode
+            currentTravelMode
         );
 
         // Get the optimized waypoint order
@@ -348,10 +349,13 @@ async function optimizeRoute() {
         });
         optimizedPlaces.push(savedPlaces[savedPlaces.length - 1]);
 
+        // Animate the reordering
+        await animateReordering(optimizedPlaces);
+
         // Update the saved places array
         savedPlaces = optimizedPlaces;
         
-        // Update UI
+        // Update UI with animation
         updatePlacesList();
         savePlacesToLocalStorage();
         
@@ -359,6 +363,9 @@ async function optimizeRoute() {
         displayRouteInfo(result.routes[0].legs);
         
         currentRoute = result;
+
+        // Update markers and lines
+        updateRouteVisualization(result);
     } catch (error) {
         console.error('Route optimization failed:', error);
         alert('Could not optimize route. Please try again.');
@@ -421,14 +428,29 @@ function formatDistance(meters) {
 
 // Add event listeners after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('optimize-route').addEventListener('click', optimizeRoute);
+    const drivingButton = document.getElementById('mode-driving');
+    const walkingButton = document.getElementById('mode-walking');
     
-    document.getElementById('travel-mode').addEventListener('change', () => {
-        if (currentRoute) {
-            optimizeRoute(); // Recalculate route when travel mode changes
-        }
+    drivingButton.addEventListener('click', () => {
+        setTravelMode('DRIVING', drivingButton, walkingButton);
     });
+    
+    walkingButton.addEventListener('click', () => {
+        setTravelMode('WALKING', walkingButton, drivingButton);
+    });
+    
+    document.getElementById('optimize-route').addEventListener('click', optimizeRoute);
 });
+
+function setTravelMode(mode, activeButton, inactiveButton) {
+    currentTravelMode = mode;
+    activeButton.classList.add('active');
+    inactiveButton.classList.remove('active');
+    
+    if (currentRoute) {
+        optimizeRoute(); // Recalculate route when travel mode changes
+    }
+}
 
 // Update clearRoute function
 function clearRoute() {
@@ -440,4 +462,67 @@ function clearRoute() {
     if (routeInfo) {
         routeInfo.remove();
     }
+}
+
+function updateRouteVisualization(result) {
+    // Customize the route line style
+    const routeOptions = {
+        polylineOptions: {
+            strokeColor: '#007AFF',
+            strokeWeight: 4,
+            strokeOpacity: 0.8
+        },
+        suppressMarkers: false,
+        markerOptions: {
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 7,
+                fillColor: '#007AFF',
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: '#FFFFFF'
+            }
+        }
+    };
+
+    directionsRenderer.setOptions(routeOptions);
+    directionsRenderer.setDirections(result);
+}
+
+async function animateReordering(newOrder) {
+    const placesList = document.getElementById('saved-places');
+    const items = placesList.querySelectorAll('.place-item');
+    
+    // Add transition class to all items
+    items.forEach(item => {
+        item.style.transition = 'transform 0.5s ease-in-out';
+    });
+
+    // Calculate and apply the new positions
+    const oldPositions = Array.from(items).map(item => item.getBoundingClientRect());
+    
+    // Update the list with new order
+    updatePlacesList();
+    
+    // Animate from old positions to new positions
+    const newItems = placesList.querySelectorAll('.place-item');
+    const newPositions = Array.from(newItems).map(item => item.getBoundingClientRect());
+    
+    newItems.forEach((item, index) => {
+        const oldPos = oldPositions[index];
+        const newPos = newPositions[index];
+        const deltaY = oldPos.top - newPos.top;
+        
+        // Apply the reverse transform to start from the old position
+        item.style.transform = `translateY(${deltaY}px)`;
+        
+        // Force a reflow
+        item.offsetHeight;
+        
+        // Animate to the new position
+        item.style.transform = 'translateY(0)';
+    });
+
+    // Wait for animation to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
 } 

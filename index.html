@@ -11,10 +11,16 @@
         <div class="places-list">
             <h2>Saved Places</h2>
             <div class="route-controls">
-                <select id="travel-mode" class="travel-mode-select">
-                    <option value="DRIVING">🚗 By Car</option>
-                    <option value="WALKING">🚶 Walking</option>
-                </select>
+                <div class="travel-mode-buttons">
+                    <button id="mode-driving" class="mode-button active">
+                        <span class="icon">🚗</span>
+                        <span>Drive</span>
+                    </button>
+                    <button id="mode-walking" class="mode-button">
+                        <span class="icon">🚶</span>
+                        <span>Walk</span>
+                    </button>
+                </div>
                 <button id="optimize-route" class="optimize-button">
                     Optimize Route
                 </button>

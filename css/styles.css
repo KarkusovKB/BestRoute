@@ -71,13 +71,14 @@
 .places-list {
     width: 350px;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(10px);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     padding: 24px;
     overflow-y: auto;
     flex-shrink: 0;
     z-index: 2;
+    border-radius: 0 24px 24px 0;
 }
 
 .places-list h2 {
@@ -85,6 +86,7 @@
     color: #1d1d1f;
     font-size: 24px;
     font-weight: 600;
+    padding-left: 8px;
 }
 
 #saved-places {
@@ -93,84 +95,179 @@
 }
 
 .place-item {
-    padding: 16px;
-    margin-bottom: 12px;
-    background: white;
-    border-radius: 12px;
+    padding: 16px 16px 16px 24px;
+    margin-bottom: 24px;
+    background: #f0f7ff;
+    border-radius: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 122, 255, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 .place-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #e8f2ff;
+}
+
+.place-item:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: #007AFF;
+    border-radius: 2px;
 }
 
 .place-item .place-name {
     font-weight: 600;
     margin-bottom: 6px;
     color: #1d1d1f;
+    padding-left: 8px;
 }
 
 .place-item .place-address {
     font-size: 0.9em;
     color: #86868b;
+    padding-left: 8px;
 }
 
 .place-item .remove-place {
-    float: right;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #ff3b30;
     font-size: 20px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 8px;
     border-radius: 50%;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    background: rgba(255, 59, 48, 0.1);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .place-item .remove-place:hover {
-    background-color: #ff3b3015;
+    background: rgba(255, 59, 48, 0.2);
+    transform: translateY(-50%) scale(1.1);
 }
 
-.map-container {
-    flex: 1;
-    position: relative;
-    height: 100vh;
+.place-item:not(:last-child)::after {
+    content: '↓';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #007AFF;
+    font-size: 20px;
+    animation: bounceArrow 1s infinite;
+}
+
+.place-number {
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #007AFF;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 122, 255, 0.2);
+}
+
+@keyframes bounceArrow {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    50% {
+        transform: translateX(-50%) translateY(3px);
+    }
+}
+
+.places-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.places-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.places-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.places-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .route-controls {
     margin-bottom: 20px;
     display: flex;
+    flex-direction: column;
     gap: 12px;
+    padding: 0 8px;
 }
 
-.travel-mode-select {
+.travel-mode-buttons {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.mode-button {
     flex: 1;
     padding: 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     background: white;
     font-size: 14px;
     color: #1d1d1f;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.travel-mode-select:hover {
+.mode-button.active {
+    background: #007AFF;
+    color: white;
+}
+
+.mode-button:hover {
+    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.mode-button:active {
+    transform: translateY(0);
+}
+
+.mode-button .icon {
+    font-size: 18px;
+}
+
 .optimize-button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    background: #007AFF;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 14px 24px;
+    width: 100%;
 }
 
 .optimize-button:hover {
@@ -184,13 +281,14 @@
 }
 
 .route-info {
-    margin-top: 12px;
-    padding: 12px;
+    margin: 12px 8px;
+    padding: 16px;
     background: white;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 14px;
     color: #1d1d1f;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 122, 255, 0.1);
 }
 
 .route-info .total-time,
