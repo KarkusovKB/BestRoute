@@ -1,3 +1,14 @@
+// Add these at the very top of the file
+window.addEventListener('error', function(e) {
+    console.error('Google Maps Error Details:', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno,
+        error: e.error
+    });
+}, true);
+
 let map;
 let marker;
 let autocomplete;
@@ -80,10 +91,17 @@ function handleLocationError(browserHasGeolocation) {
 
 // Update the gm_authFailure function
 window.gm_authFailure = function() {
-    const errorMessage = 'Google Maps authentication failed! API Key: ' + 
-        document.querySelector('script[src*="maps.googleapis.com"]')
-            .src.split('key=')[1].split('&')[0].slice(0, 5) + '...';
-    console.error(errorMessage);
+    const scriptElement = document.querySelector('script[src*="maps.googleapis.com"]');
+    const apiKeyInfo = scriptElement ? 
+        'API Key in use: ' + scriptElement.src.split('key=')[1].split('&')[0].slice(0, 5) + '...' :
+        'No Google Maps script found';
+    
+    console.error('Google Maps Authentication Failed:', {
+        apiKeyInfo: apiKeyInfo,
+        pageUrl: window.location.href,
+        referrer: document.referrer
+    });
+    
     document.getElementById('map').innerHTML = 
         '<div style="padding: 20px; color: red;">' +
         'Error: Google Maps failed to load. ' +
