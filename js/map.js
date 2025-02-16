@@ -114,7 +114,10 @@ window.addEventListener('error', function(e) {
         console.error('Google Maps failed to load:', e);
         document.getElementById('map').innerHTML = 
             '<div style="padding: 20px; color: red;">' +
-            'Error: Google Maps script failed to load. ' +
-            'Please check browser console for details.</div>';
+            'Error: Google Maps script failed to load. <br><br>' +
+            'Please:<br>' +
+            '1. Check if you have an ad blocker enabled and disable it for this site<br>' +
+            '2. Refresh the page<br>' +
+            'If the problem persists, check browser console for details.</div>';
     }
 }, true); 
