@@ -1,0 +1,7 @@
+your-project/
+├── index.html
+├── css/
+│   └── styles.css
+├── js/
+│   └── map.js
+└── .env 
