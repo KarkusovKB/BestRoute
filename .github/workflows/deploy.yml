@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper cache invalidation
       
       - name: Debug API Key
         env:
@@ -38,14 +40,11 @@ jobs:
         env:
           MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          # Create a temporary file with the key
-          echo "$MAPS_API_KEY" > key.txt
-          # Use the file content to replace the placeholder
-          sed -i "s|GOOGLE_MAPS_API_KEY_PLACEHOLDER|$(cat key.txt)|g" index.html
-          rm key.txt
-          # Verify replacement
-          echo "Checking key in index.html:"
-          grep -o "key=[^&]*" index.html | cut -c1-8
+          find . -type f -name "*.html" -exec sed -i "s/GOOGLE_MAPS_API_KEY_PLACEHOLDER/$MAPS_API_KEY/g" {} +
+      
+      - name: Clear cache  # Add cache clearing step
+        run: |
+          rm -rf .cache
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
